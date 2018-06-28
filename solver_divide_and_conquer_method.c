@@ -124,7 +124,6 @@ int divide_direction(struct point_group *PG){
 }
 
 /* x または y要素に注目しソートする*/
-/* buff を返す */
 void sort_buff (struct point_group *PG, int compare_x){
   int i, j, tmp_x, tmp_y;
   int buffNum;
@@ -241,9 +240,58 @@ float differ(struct point *point1, float common_point[2], struct point *point2){
   return distance(point1, &cp) + distance(point2, &cp) - distance(point1, point2);
 } 
 
+void make_new_path(struct point_group *pg_new, struct point_group *pg1, struct point_group *pg2, int b1_pos, int b2_pos, int order){
+  int i;
+  i = b2_pos + order;
+  int j;
+  int threshold = pg2->point_group_num; //3
+
+  //printf("b2_pos: %d \n", b2_pos); // 0
+
+  for (j=0; j<b1_pos+1; j++){
+    pg_new->data[j].x = pg1->data[j].x;
+    pg_new->data[j].y = pg1->data[j].y;
+  }
+
+  printf("first: \n");
+  print_point_group(pg_new);
+
+  while (1){
+    if (i < 0){
+      i = threshold -1;
+    }
+    else if (i > threshold || i == threshold){
+      i=0;
+    }
+    if (i == b2_pos){
+      break;
+    }
+    printf("i: %d \n",i);
+
+    pg_new->data[j].x=pg2->data[i].x;
+    pg_new->data[j].y=pg2->data[i].y;
+    pg_new->point_group_num += 1;
+    i = i+order;
+    j = j+1;
+  }
+  
+  printf("middle: \n");
+  print_point_group(pg_new);
+
+  for (j=pg_new->point_group_num+1; j<pg1->point_group_num; j++){
+    pg_new->data[j].x = pg1->data[j].x;
+    pg_new->data[j].y = pg1->data[j].y;
+    pg_new->point_group_num += 1;
+  }
+  printf("end: \n");
+  print_point_group(pg_new);
+  printf("\n");
+}
+
 void merge(struct queue *Q){
   int i,j;
-  while (Q->head < Q->tail || Q->head < Q->tail){
+  //while (Q->head < Q->tail || Q->head < Q->tail){
+  while (Q->head + 1 < Q->tail){
     i = Q->head;
     
     struct point_group pg1;
@@ -263,17 +311,16 @@ void merge(struct queue *Q){
     search(&pg1, &pg2, b1_pos, point);
     search(&pg2, &pg1, b2_pos, point);
     
-    for(i=0;i<3;i++){
-      printf("%d ", b1_pos[i]);
-    }
-    printf("\n");
-    for(i=0;i<3;i++){
-      printf("%d ", b2_pos[i]);
-    }
-    printf("\n");
+    /* for(i=0;i<3;i++){ */
+    /*   printf("%d ", b1_pos[i]); */
+    /* } */
+    /* printf("\n"); */
+    /* for(i=0;i<3;i++){ */
+    /*   printf("%d ", b2_pos[i]); */
+    /* } */
+    /* printf("\n"); */
 
     // calculate distance
-
     float d[4];
     d[0] = differ(&pg1.data[b1_pos[0]], point, &pg2.data[b2_pos[0]]);
     d[1] = differ(&pg1.data[b1_pos[2]], point, &pg2.data[b2_pos[2]]);
@@ -281,20 +328,32 @@ void merge(struct queue *Q){
     d[3] = differ(&pg1.data[b1_pos[2]], point, &pg2.data[b2_pos[0]]);
     
   float d_max = -100.0;
+  //int i_max = 100;
   for (i=0; i<4; i++) {
     if (d_max < d[i]){
       d_max = d[i];
+      //i_max = i;
     }
   }
   
-  printf ("%f \n", d_max);
-
-  Q->head = Q->head +2;
-  printf("%d \n",Q->head);
-
+  //printf ("d_max %f \n", d_max);
+ 
   /* TODO make new path*/
-  
+  struct point_group pg_new;
+  if (d_max == d[0])
+    make_new_path(&pg_new, &pg1, &pg2, b1_pos[1], b2_pos[1], -1);
+  if (d_max == d[1])
+    make_new_path(&pg_new, &pg1, &pg2, b1_pos[2], b2_pos[1], -1);
+  if (d_max == d[2])
+    make_new_path(&pg_new, &pg1, &pg2, b1_pos[1], b2_pos[1], 1);
+  if (d_max == d[3])
+    make_new_path(&pg_new, &pg1, &pg2, b1_pos[2], b2_pos[1], 1);
 
+  enqueue(Q, &pg_new);
+  //print_queue(Q);//
+  Q->head = Q->head +2;
+  //printf("q-head %d \n", Q->head);
+  //printf("q-tail %d \n", Q->tail);
   }
 }
 
@@ -319,29 +378,30 @@ void divide_merge(struct queue *Q){
   for(i=Q->head; i<Q->tail; i++){
     enqueue(&Q_new, &Q->data_group[i]);
   }
-  printf("Q_new\n");
-  print_queue(&Q_new);
+  //printf("Q_new\n");
+  //print_queue(&Q_new);
   /* merge Q_new*/
   merge(&Q_new);
-
+  printf("final path\n");
+  print_queue(&Q_new);
 }
 
 
 int main(int argc, char *args[])
 {
-  /* float buff[5][2] = { {214.98279057984195,762.6903632435094}, */
-  /* 		       {1222.0393903625825,229.56212316547953}, */
-  /* 		       {792.6961393471055,404.5419583098643}, */
-  /* 		       {1042.5487563564207,709.8510160219619}, */
-  /* 		       {150.17533883877582,25.512728869805677} }; */
-  float buff[8][2] = {{20, 20},
-  		      {120, 20},
-  		      {220, 20},
-  		      {70, 120},
-  		      {170, 120},
-  		      {270, 120},
-  		      {20, 220},
-  		      {120, 220}};
+  float buff[5][2] = { {214.98279057984195,762.6903632435094},
+  		       {1222.0393903625825,229.56212316547953},
+  		       {792.6961393471055,404.5419583098643},
+  		       {1042.5487563564207,709.8510160219619},
+  		       {150.17533883877582,25.512728869805677} };
+  /* float buff[8][2] = {{20, 20}, */
+  /* 		      {120, 20}, */
+  /* 		      {220, 20}, */
+  /* 		      {70, 120}, */
+  /* 		      {170, 120}, */
+  /* 		      {270, 120}, */
+  /* 		      {20, 220}, */
+  /* 		      {120, 220}}; */
 
   /* float buff[16][2] = {{214.98279057984195,762.6903632435094}, */
   /* 		       {1222.0393903625825,229.56212316547953}, */
@@ -358,7 +418,7 @@ int main(int argc, char *args[])
   /* 		       {346.5590354089814,379.9049180244456}, */
   /* 		       {46.46526011978871,199.52249964573156}, */
   /* 		       {700.6201498409152,446.2310172436656}, */
-  /* 		       {372.9351204121162,207.77988738688586}};  */
+  /* 		       {372.9351204121162,207.77988738688586}}; */
   int buffNum = sizeof buff /sizeof buff[0]; // 5
   //divide_test(buff, buffNum);  
   struct queue Q;
