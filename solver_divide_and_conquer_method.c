@@ -1,5 +1,5 @@
 #include<stdio.h>
-//#include <string.h>
+#include<math.h>
 
 /* http://www.geocities.jp/m_hiroi/light/pyalgo63.html */
 
@@ -182,31 +182,121 @@ void divide(struct point_group *PG, struct queue *Q, int compare_x){
   //print_queue(Q);
 }
 
-/* /\* 分割のテスト *\/ */
-/* void divide_test(float buff[][2], int buffNum){ */
-/*   int n; */
-/*   n = buffNum / 2; */
-  
-/*   // 0 ~ n */
-/*   float b1[n+1][2]; */
-/*   // n ~ buffNum -1 */
-/*   float b2[buffNum-n][2];  */
+void search(struct point_group *pg1, struct point_group *pg2, int b_pos[3], float point[2]){
+  int i, j;
+  for (i=0; i<pg1->point_group_num; i++){
+    for (j=0; j<pg2->point_group_num; j++){
+      if (pg1->data[i].x == pg2->data[j].x && pg1->data[i].y == pg2->data[j].y){
+	point[0] = pg1->data[i].x;
+	point[1] = pg1->data[i].y;
+      }
+    }
+  }
 
-/*   int i, j; */
-/*   if (buffNum < 3 || buffNum == 3){ */
-/*     for (i = 0; i < buffNum; i++) { */
-/*       for (j = 0; j < 2; j++) { */
-/* 	printf("%f \n", buff[i][j]); */
-/*       } */
-/*     } */
-/*     printf("\n"); */
-/*   } */
-/*   else{ */
-/*     divide(buff, b1, b2, divide_direction(buff, buffNum), buffNum); */
-/*     divide_test(b1, sizeof b1 /sizeof b1[0]); */
-/*     divide_test(b2, sizeof b2 /sizeof b2[0]); */
-/*   } */
-/* } */
+  for (i=0; i<pg1->point_group_num; i++){
+    if (pg1->data[i].x == point[0] && pg1->data[i].y == point[1]){
+      if (i == 0){
+	b_pos[0] = pg1->point_group_num-1;
+	b_pos[1] = i;
+	b_pos[2] = i+1;
+	break;
+      }
+      else if (i == pg1->point_group_num -1){
+	b_pos[0] = i-1;
+	b_pos[1] = i;
+	b_pos[2] = 0;
+	break;
+      }
+      else{
+	b_pos[0] = i-1;
+	b_pos[1] = i;
+	b_pos[2] = i+1;
+	break;
+      }
+    }
+  }
+}
+
+float distance(struct point *point1, struct point *point2){
+  float tmp, tmp0, tmp1, tmp2;
+  tmp1 = point1[0].x - point2[0].x;
+  tmp2 = point1[0].y - point2[0].y;
+  tmp = tmp1 * tmp1 + tmp2 * tmp2;
+  return sqrt(tmp);
+} 
+
+float differ(struct point *point1, float common_point[2], struct point *point2){
+  struct point cp;
+  cp.x = common_point[0];
+  cp.y = common_point[1];
+
+  /* printf("%f ", cp.x); */
+  /* printf("%f \n", cp.y); */
+
+
+  /* printf("%f ", distance(point1, &cp)); */
+  /* printf("%f ", distance(point2, &cp)); */
+  /* printf("%f \n", distance(point1, point2)); */
+  
+  return distance(point1, &cp) + distance(point2, &cp) - distance(point1, point2);
+} 
+
+void merge(struct queue *Q){
+  int i,j;
+  while (Q->head < Q->tail || Q->head < Q->tail){
+    i = Q->head;
+    
+    struct point_group pg1;
+    struct point_group pg2;
+    pg1 = Q->data_group[i];
+    pg2 = Q->data_group[i+1];
+    
+    //printf("1\n");
+    //print_point_group(&pg1);
+    //printf("2\n");
+    //print_point_group(&pg2);
+    
+    // search for common point
+    int b1_pos[3];
+    int b2_pos[3]; 
+    float point[2];
+    search(&pg1, &pg2, b1_pos, point);
+    search(&pg2, &pg1, b2_pos, point);
+    
+    for(i=0;i<3;i++){
+      printf("%d ", b1_pos[i]);
+    }
+    printf("\n");
+    for(i=0;i<3;i++){
+      printf("%d ", b2_pos[i]);
+    }
+    printf("\n");
+
+    // calculate distance
+
+    float d[4];
+    d[0] = differ(&pg1.data[b1_pos[0]], point, &pg2.data[b2_pos[0]]);
+    d[1] = differ(&pg1.data[b1_pos[2]], point, &pg2.data[b2_pos[2]]);
+    d[2] = differ(&pg1.data[b1_pos[0]], point, &pg2.data[b2_pos[2]]);
+    d[3] = differ(&pg1.data[b1_pos[2]], point, &pg2.data[b2_pos[0]]);
+    
+  float d_max = -100.0;
+  for (i=0; i<4; i++) {
+    if (d_max < d[i]){
+      d_max = d[i];
+    }
+  }
+  
+  printf ("%f \n", d_max);
+
+  Q->head = Q->head +2;
+  printf("%d \n",Q->head);
+
+  /* TODO make new path*/
+  
+
+  }
+}
 
 void divide_merge(struct queue *Q){
   // 0 ~ n
@@ -222,7 +312,6 @@ void divide_merge(struct queue *Q){
     dequeue(Q);
     //printf("%d\n", Q->head); // 1
     //printf("%d\n", (Q->data_group[Q->head]).point_group_num);
-    //print_queue(&Q_new);
   }
   
   /* add Q_new */
@@ -230,91 +319,13 @@ void divide_merge(struct queue *Q){
   for(i=Q->head; i<Q->tail; i++){
     enqueue(&Q_new, &Q->data_group[i]);
   }
+  printf("Q_new\n");
   print_queue(&Q_new);
   /* merge Q_new*/
+  merge(&Q_new);
 
 }
 
-/* void search(float point[][2], float buff[][2], int buffNum, int b_pos[3]){ */
-/*   int i; */
-/*   for (i=0; i<buffNum; i++){ */
-/*     if (buff[i][0] == point[0][0] && buff[i][1] == point[0][1]){ */
-/*       if (i == 0){ */
-/* 	b_pos[0] = buffNum-1; */
-/* 	b_pos[1] = i; */
-/* 	b_pos[2] = i+1; */
-/* 	break; */
-/*       } */
-/*       else if (i == buffNum -1){ */
-/* 	b_pos[0] = i-1; */
-/* 	b_pos[1] = i; */
-/* 	b_pos[2] = 0; */
-/* 	break; */
-/*       } */
-/*       else{ */
-/* 	b_pos[0] = i-1; */
-/* 	b_pos[1] = i; */
-/* 	b_pos[2] = i+1; */
-/* 	break; */
-/*       } */
-/*     } */
-/*   } */
-/* } */
-
-/* float distance(float point1[][2], float point2[][2]){ */
-/*   return (point1[0][0] - point2[0][0]) * (point1[0][0] - point2[0][0]) + (point1[0][1] - point2[0][1]) * (point1[0][1] - point2[0][1]); */
-/* } */
-
-/* float differ(float point1[][2], float common_point[][2], float point2[][2]){ */
-/*   return distance(point1, common_point) + distance(point2, common_point) - distance(point1, point2); */
-/* } */
-
-/* void merge(float buff1[][2], float buff2[][2], int size_buff1, int size_buff2){ */
-/*   int i,j; */
-/*   printf("%d ",size_buff1); */
-/*   for (i=0;i<size_buff1; i++){ */
-/*     for(j=0; j<2; j++){ */
-/*       printf("%f ", buff1[i][j]); */
-/*     }} */
-  
-
-/*   float point[0][2]; */
-/*   point[0][0] = buff2[0][0]; */
-/*   point[0][1] = buff2[0][1]; */
-
-/*   printf("%d ", point[0][0]); */
-/*   printf("%d ", point[0][1]); */
-
-/*   int b1_pos[3]; */
-/*   int b2_pos[3]; */
-/*   search(point, buff1, sizeof buff1 /sizeof buff1[0], b1_pos); */
-/*   search(point, buff2, sizeof buff2 /sizeof buff2[0], b2_pos); */
-
-/*   float d[4]; */
-/*   //float point1[0][2] point2[0][2], common_point[0][2]; */
-/*   //float common_point [0][2]; */
-/*   //point1[0][0] = buff1[b1_pos[0]][0]; */
-/*   //common_point[0][0] = buff2[0][0]; */
-/*   //common_point[0][1] = buff2[0][1]; */
-
-/*   d[0] = differ(buff1[b1_pos[0]], buff2[0], buff2[b2_pos[0]]); */
-/*   d[1] = differ(buff1[b1_pos[2]], buff2[0], buff2[b2_pos[2]]); */
-/*   d[2] = differ(buff1[b1_pos[0]], buff2[0], buff2[b2_pos[2]]); */
-/*   d[3] = differ(buff1[b1_pos[2]], buff2[0], buff2[b2_pos[0]]); */
-
-/*   //int i; */
-/*   float d_max = -100.0; */
-/*   for (i=0; i<4; i++) { */
-/*     printf("%f\n", d[i]); */
-/*     if (d_max < d[i]){ */
-/*       d_max = d[i]; */
-/*     } */
-/*   } */
-
-/*   printf ("%f ", d_max); */
-
-/*   /\* TODO make new path*\/ */
-/* } */
 
 int main(int argc, char *args[])
 {
