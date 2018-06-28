@@ -1,18 +1,85 @@
 #include<stdio.h>
+#include <string.h>
 
 /* http://www.geocities.jp/m_hiroi/light/pyalgo63.html */
 
-void read_file(char file_name);
-int divide_direction(float buff[][2], int buffNum);
-void sort_buff (float buff[][2], int compare_x, int buffNum);
-void divide(float buff[][2], float buff1[][2], float buff2[][2], int compare_x, int buffNum);
-void divide_test(float buff[][2], int buffNum);
-void divide_merge(float buff[][2], int buffNum);
-void merge(float buff1[][2], float buff2[][2], int size_buff1, int size_buff2);
-void search(float point[][2], float buff[][2], int buffNum, int b_pos[3]);
-float distance(float point1[][2], float point2[][2]);
-float differ(float point1[][2], float common_point[][2], float point2[][2]);
+#define N 100
 
+struct array{
+  float data[N][2];
+  int num;
+};
+struct point{
+  float x;
+  float y;
+};
+struct point_group{
+  struct point data[N];
+  int point_group_num;
+};
+struct queue{
+  struct point_group data_group[N];
+  int head;
+  int tail;
+};
+void initialize_point(struct point *point, float buff[2]){
+  point->x=buff[0];
+  point->y=buff[1];
+}
+void initialize_point_group(struct point_group *pg, struct array *ar){
+  int i;
+  pg->point_group_num = ar->num;
+  for(i=0; i < ar->num; i++){
+    initialize_point(&(pg->data[i]), ar->data[i]);
+  }
+}
+void initialize_queue(struct queue *q, struct array *ar, int queueNum){
+  int i;
+  q->head=0;
+  q->tail=queueNum;
+  for(i=0; i < queueNum; i++){
+    initialize_point_group(&(q->data_group[i]), ar);
+  }
+}
+void print_point(struct point *P){
+  printf("%f ", P->x);
+  printf("%f \n", P->y);
+}  
+
+void print_point_group(struct point_group *PG){
+  int i;
+  for (i=0; i<PG->point_group_num; i++){
+    print_point(&PG->data[i]);
+  }
+  printf("\n");
+}
+void enqueue(struct queue *q, struct point_group *pg){
+  if (q->tail >= N) {
+    printf("This queue is full! \n");
+  }else{
+    int i;
+    struct array AR;
+    AR.num = pg->point_group_num;
+    for (i=0; i<AR.num; i++){
+	AR.data[i][0] = (pg->data)[i].x;
+	AR.data[i][1] = (pg->data)[i].y;
+    }
+    initialize_point_group(&(q->data_group[q->tail]), &AR);
+    q->tail = q->tail +1;
+  }
+}
+
+int dequeue(struct queue *q){
+  struct point_group pg;
+  pg.point_group_num = (q->data_group[q->head]).point_group_num;
+  if(q->head == q->tail){
+    return -1;
+  }else{
+    //print_point_group(&(q->data_group[q->head]));
+    q->head = q->head + 1;
+    return q->head;
+  }
+}
 // FIXME: reading file
 // [[x,y], [x,y],...]
 void read_file(char file_name){
@@ -137,12 +204,31 @@ void divide_test(float buff[][2], int buffNum){
 void divide_merge(float buff[][2], int buffNum){
   // 0 ~ n
   // n ~ buffNum -1
+  float buff_list[100];
+
   int n;
   n = buffNum / 2;
   float b1[n+1][2]; 
   float b2[buffNum-n][2];
-
+  
   int i, j;
+  memcpy(int_arr3, int_arr1, sizeof(float) * 5);
+  for (i = 0; i < ; i++) {
+    for (j = 0; j < 2; j++) {
+      buff[i][j] = buff[0][j];
+    }
+  }
+  
+  buff_list[0] = buff;
+  
+  while (sizeof buff_list[0] )
+
+
+
+
+
+
+  
   if (buffNum < 3 || buffNum == 3){
     return;
   }else{
