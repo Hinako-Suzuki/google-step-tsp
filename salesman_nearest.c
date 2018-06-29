@@ -60,24 +60,19 @@ double Distance(struct data n1,struct data n2){
 int shortest(int now, int how_many, struct data d[], struct keiro min[]){
     int i,j,check;
     double length;
-    printf("how_many=%d now=%d\n",how_many,now);
     for(i=0;i<NUM;i++){
         length=Distance(d[now],d[i]);
-        printf("%dlength=%lf\n",i,length);
         if(length!=0&&length<*min[how_many].kyori){
             check=0;
             for(j=0;j<how_many;j++){
                 if(i==*min[j].michi)check++;
             }
-
-            printf("check=%d\n",check);
             if(check==0){
                 *min[how_many].kyori=length;
                 *min[how_many].michi=i;
             }
         }
     }
-    printf("\n");
     return *min[how_many].michi;
 }
 
@@ -99,7 +94,6 @@ int main(){
 
     for(i=1;i<NUM;i++){
         now=shortest(now,i,d,min);
-        printf("%dnow=%d\n",i,now);
     }
 
     output(min);
