@@ -51,7 +51,7 @@ int read_file(char *file_name, struct point_group *PG){
 }
 
 /* 分割する方向を決定する */
-/* 
+/*
   (max_x - min_x) - (max_y - min_y) > 0 : separate by x 
   (max_x - min_x) - (max_y - min_y) < 0 : separate by y 
 */
@@ -112,8 +112,6 @@ void divide(struct point_group *PG1, struct point_group *PG2, struct point_group
     PG1->data[i].y = (PG->data[i]).y;
   }
   PG1->point_group_num = i;
-  //printf("PG1:\n");
-  //print_point_group(PG1);
 
   // n - buffNum
   for (i = n; i < PG->point_group_num; i++) {
@@ -121,10 +119,9 @@ void divide(struct point_group *PG1, struct point_group *PG2, struct point_group
     PG2->data[i-n].y = (PG->data[i]).y;
   }
   PG2->point_group_num = PG->point_group_num -n;
-  //printf("PG2:\n");
-  //print_point_group(PG2);
 }
 
+/* 小さい固まりの２組のうち，共通の点がある．それを見つける．*/
 void search(struct point_group *pg1, struct point_group *pg2, int b_pos[3], float point[2]){
   int i, j;
   for (i=0; i<pg1->point_group_num; i++){
@@ -158,7 +155,6 @@ void search(struct point_group *pg1, struct point_group *pg2, int b_pos[3], floa
       }
     }
   }
-  //printf("p: %d, i: %d, n: %d\n", b_pos[0], b_pos[1], b_pos[2]);
 }
 
 float distance(struct point *point1, struct point *point2){
@@ -172,40 +168,23 @@ float distance(struct point *point1, struct point *point2){
 float differ(struct point *point1, float common_point[2], struct point *point2){
   struct point cp;
   cp.x = common_point[0];
-  cp.y = common_point[1];
-
-  /* printf("%f ", cp.x); */
-  /* printf("%f \n", cp.y); */
-
-
-  /* printf("%f ", distance(point1, &cp)); */
-  /* printf("%f ", distance(point2, &cp)); */
-  /* printf("%f \n", distance(point1, point2)); */
-  
+  cp.y = common_point[1];  
   return distance(point1, &cp) + distance(point2, &cp) - distance(point1, point2);
 } 
 
+/* 頂点の配列２つを１つにする */
 void make_new_path(struct point_group *pg_new, struct point_group *pg1, struct point_group *pg2, int b1_pos, int b2_pos, int order){
   int i;
   i = b2_pos + order;
   int j;
-  int threshold = pg2->point_group_num; //3
-
-  //printf("b1_pos: %d \n", b1_pos); // 0
-  //printf("b2_pos: %d \n", b2_pos); // 0
-  //printf("%d \n", pg_new->point_group_num);
+  int threshold = pg2->point_group_num;
 
   pg_new->point_group_num = 0;
-  //for (j=0; j<b1_pos+1; j++){
   for (j=0; j<b1_pos; j++){
     pg_new->data[j].x = pg1->data[j].x;
     pg_new->data[j].y = pg1->data[j].y;
     pg_new->point_group_num = pg_new->point_group_num +1;
   }
-
-  //printf("%d \n", pg_new->point_group_num);
-  //printf("first: \n");
-  //print_point_group(pg_new);
 
   while (1){
     if (i < 0){
@@ -215,11 +194,8 @@ void make_new_path(struct point_group *pg_new, struct point_group *pg1, struct p
       i=0;
     }
     if (i == b2_pos){
-      //printf("break\n");
       break;
     }
-    //printf("i: %d \n",i);
-
     pg_new->data[j].x=pg2->data[i].x;
     pg_new->data[j].y=pg2->data[i].y;
     pg_new->point_group_num += 1;
@@ -227,36 +203,19 @@ void make_new_path(struct point_group *pg_new, struct point_group *pg1, struct p
     j = j+1;
   }
   
-  //printf("middle: \n");
-  //print_point_group(pg_new);
-
-  /* okashii */
   int k;
-  //printf("j: %d\n", j);
-  //for (k=b1_pos+1; k<pg1->point_group_num; k++){
   for (k=b1_pos; k<pg1->point_group_num; k++){
-    //for (j=pg_new->point_group_num+1; j<pg1->point_group_num; j++){
-    //printf("j: %d", j);
     pg_new->data[j].x = pg1->data[k].x;
     pg_new->data[j].y = pg1->data[k].y;
     pg_new->point_group_num += 1;
     j = j+1;
   }
-  //printf("end: \n");
-  //print_point_group(pg_new);
 }
 
+/* 経路を見つける．蝶々の形をした三角形２つをどうつなぐか考える．
+   TODO: 図を描く */
 void merge(struct point_group *pg1, struct point_group *pg2, struct point_group *pg_new){
-  int i,j;
-  //struct point_group pg1, pg2;
-  //pg1 = q->data_group[0];
-  //pg2 = q->data_group[1];
- 
-  /* printf("1\n"); */
-  /* print_point_group(pg1); */
-  /* printf("2\n"); */
-  /* print_point_group(pg2); */
-
+  int i;
   // search for common point
   int b1_pos[3];
   int b2_pos[3];
@@ -264,15 +223,6 @@ void merge(struct point_group *pg1, struct point_group *pg2, struct point_group 
   search(pg1, pg2, b1_pos, point);
   search(pg2, pg1, b2_pos, point);
     
-  /* for(i=0;i<3;i++){ */
-  /*   printf("%d ", b1_pos[i]); */
-  /* } */
-  /* printf("\n"); */
-  /* for(i=0;i<3;i++){ */
-  /*   printf("%d ", b2_pos[i]); */
-  /* } */
-  /* printf("\n"); */
-
   // calculate distance
   float d[4];
   d[0] = differ(&pg1->data[b1_pos[0]], point, &pg2->data[b2_pos[0]]);
@@ -287,9 +237,7 @@ void merge(struct point_group *pg1, struct point_group *pg2, struct point_group 
     }
   }
   
-  //printf ("d_max %f \n", d_max);
-
-  /* TODO make new path*/
+  /* make new path*/
   if (d_max == d[0]){
     make_new_path(pg_new, pg1, pg2, b1_pos[1], b2_pos[1], -1);
   }
@@ -304,6 +252,7 @@ void merge(struct point_group *pg1, struct point_group *pg2, struct point_group 
   }
 }
 
+/* 見つけた経路をファイルに書き込む */
 int return_index(struct point_group *pg_new, char *file_name1, char *file_name){
   int i, j;
   float x, y;
@@ -313,70 +262,49 @@ int return_index(struct point_group *pg_new, char *file_name1, char *file_name){
 
   FILE *fp;
   fp = fopen(file_name, "w");
-  if (fp == NULL) {          // オープンに失敗した場合
-    printf("cannot open\n");         // エラーメッセージを出して
-    return -1;                         // 異常終了
+  if (fp == NULL) {
+    printf("cannot open\n");
+    return -1;
   }
   fprintf(fp, "index\n");
   for (i=0; i<pg_new->point_group_num; i++){
     x = pg_new->data[i].x;
     y = pg_new->data[i].y;
     for(j=0; j<dict.point_group_num; j++){
-      //printf("X: %f, Y: %f\n\n", dict.data[j].x, dict.data[j].y);
-      //printf("x: %f, y: %f\n", x, y);
       if ((int)dict.data[j].x == (int)x && (int)dict.data[j].y == (int)y){
 	  fprintf(fp, "%d\n", j);
-	  //printf("%d \n", j);
 	}
       }
     }
   fclose(fp);
 }
 
-  void divide_merge(struct point_group *PG, struct point_group *pg_new, char *file_name1, char *file_name){
+/* 
+   再帰関数を使って，頂点の配列をばらしていく．(divide)
+   順番につないでいく．(merge)
+ */
+void divide_merge(struct point_group *PG, struct point_group *pg_new, char *file_name1, char *file_name){
   struct point_group PG1, PG2;
-  //printf("a: %d\n", PG->point_group_num);
   if (PG->point_group_num < 3 || PG->point_group_num == 3){
-    //enqueue(q, PG);
     return;
   }
   else{
     divide(&PG1, &PG2, PG, divide_direction(PG));
-    //struct point_group PG3, PG4;
     divide_merge(&PG1, pg_new, file_name1, file_name);
     divide_merge(&PG2, pg_new, file_name1, file_name);
-    /* printf("!!!\n"); */
-    /* print_point_group(&PG1); */
-    /* print_point_group(&PG2); */
-    /* printf("!!!\n"); */
-    //printf("QQQQQ\n");
-    //print_queue(q);
-    //printf("QQQQQ\n");
-    //merge(q, pg_new);
     merge(&PG1, &PG2, pg_new);
-  }
-  
-  //printf("CREATED PATH: \n");
-  //print_point_group(pg_new);
-  //printf("\n");
-
-  //printf("final path\n");
-  //print_queue(&Q_new);
+  }  
   return_index(pg_new, file_name1, file_name);
 }
 
 
 int main(int argc, char *args[])
 {
-  char input_file_name[] = "input_6.csv";
-  char output_file_name[] = "output_6.csv";
+  char input_file_name[] = "input_0.csv";
+  char output_file_name[] = "output_0.csv";
   
   struct point_group PG, pg_new;
   read_file(input_file_name, &PG);
-
-  //printf ("initialize\n");
-  //print_point_group(&PG);
-
   divide_merge(&PG, &pg_new, input_file_name, output_file_name);
   return 0;
   }
