@@ -6,12 +6,7 @@
 reference: http://www.geocities.jp/m_hiroi/light/pyalgo63.html 
 */
 
-#define N 100
-
-struct array{
-  float data[N][2];
-  int num;
-};
+#define N 2048
 struct point{
   float x;
   float y;
@@ -20,30 +15,7 @@ struct point_group{
   struct point data[N];
   int point_group_num;
 };
-struct queue{
-  struct point_group data_group[N];
-  int head;
-  int tail;
-};
-void initialize_point(struct point *point, float buff[2]){
-  point->x=buff[0];
-  point->y=buff[1];
-}
-void initialize_point_group(struct point_group *pg, struct array *ar){
-  int i;
-  pg->point_group_num = ar->num;
-  for(i=0; i < ar->num; i++){
-    initialize_point(&(pg->data[i]), ar->data[i]);
-  }
-}
-void initialize_queue(struct queue *q, struct array *ar, int queueNum){
-  int i;
-  q->head=0;
-  q->tail=queueNum;
-  for(i=0; i < queueNum; i++){
-    initialize_point_group(&(q->data_group[i]), ar);
-  }
-}
+
 void print_point(struct point *P){
   printf("%f ", P->x);
   printf("%f \n", P->y);
@@ -56,43 +28,8 @@ void print_point_group(struct point_group *PG){
   }
   printf("\n");
 }
-void print_queue(struct queue *Q){
-  int i;
-  for (i=Q->head; i<Q->tail; i++){
-    print_point_group(&Q->data_group[i]);
-  }
-}
 
-void enqueue(struct queue *q, struct point_group *pg){
-  if (q->tail >= N) {
-    printf("This queue is full! \n");
-  }else{
-    int i;
-    struct array AR;
-    AR.num = pg->point_group_num;
-    for (i=0; i<AR.num; i++){
-	AR.data[i][0] = (pg->data)[i].x;
-	AR.data[i][1] = (pg->data)[i].y;
-    }
-    initialize_point_group(&(q->data_group[q->tail]), &AR);
-    q->tail = q->tail +1;
-  }
-}
-
-int dequeue(struct queue *q){
-  struct point_group pg;
-  pg.point_group_num = (q->data_group[q->head]).point_group_num;
-  if(q->head == q->tail){
-    return -1;
-  }else{
-    //print_point_group(&(q->data_group[q->head]));
-    q->head = q->head + 1;
-    return q->head;
-  }
-}
-// FIXME: reading file
-// [[x,y], [x,y],...]
-int read_file(char *file_name, float buff[][2]){
+int read_file(char *file_name, struct point_group *PG){
   FILE *fp;
   fp = fopen(file_name, "r");
   if(fp == NULL){
@@ -104,10 +41,11 @@ int read_file(char *file_name, float buff[][2]){
   //各行の読み込み
   fscanf(fp,"%*s,%*s");//一行目を読み飛ばす
   while(fscanf(fp,"%f,%f", &x, &y)!=EOF){
-    buff[i][0]=x;
-    buff[i][1]=y;
+    PG->data[i].x=x;
+    PG->data[i].y=y;
     i++;
   }
+  PG->point_group_num = i;
   fclose(fp);
   return;
 }
@@ -162,42 +100,29 @@ void sort_buff (struct point_group *PG, int compare_x){
 }
 
 /* 分割する */
-void divide(struct point_group *PG, struct queue *Q, int compare_x){
-  int n;
+void divide(struct point_group *PG1, struct point_group *PG2, struct point_group *PG, int compare_x){
+  int i, n;
   n = PG->point_group_num / 2;
 
   sort_buff(PG, compare_x);
-  //print_point_group(PG);
 
-  struct point_group b1;
-  struct point_group b2;
-  int i;
-
-  struct array AR1;
-  struct array AR2;
   // 0 - n
   for (i = 0; i < n+1; i++) {
-    AR1.data[i][0] = (PG->data[i]).x;
-    AR1.data[i][1] = (PG->data[i]).y;
+    PG1->data[i].x = (PG->data[i]).x;
+    PG1->data[i].y = (PG->data[i]).y;
   }
-  AR1.num = n+1;
-  initialize_point_group(&b1, &AR1);
-  //printf("b1\n");
-  //print_point_group(&b1);
+  PG1->point_group_num = i;
+  //printf("PG1:\n");
+  //print_point_group(PG1);
 
   // n - buffNum
   for (i = n; i < PG->point_group_num; i++) {
-    AR2.data[i-n][0] = (PG->data[i]).x;
-    AR2.data[i-n][1] = (PG->data[i]).y;
+    PG2->data[i-n].x = (PG->data[i]).x;
+    PG2->data[i-n].y = (PG->data[i]).y;
   }
-  AR2.num = PG->point_group_num -n;
-  initialize_point_group(&b2, &AR2);
-  //printf("b2\n");
-  //print_point_group(&b2);
-
-  enqueue(Q, &b1);
-  enqueue(Q, &b2);
-  //print_queue(Q);
+  PG2->point_group_num = PG->point_group_num -n;
+  //printf("PG2:\n");
+  //print_point_group(PG2);
 }
 
 void search(struct point_group *pg1, struct point_group *pg2, int b_pos[3], float point[2]){
@@ -233,7 +158,7 @@ void search(struct point_group *pg1, struct point_group *pg2, int b_pos[3], floa
       }
     }
   }
-  printf("p: %d, i: %d, n: %d\n", b_pos[0], b_pos[1], b_pos[2]);
+  //printf("p: %d, i: %d, n: %d\n", b_pos[0], b_pos[1], b_pos[2]);
 }
 
 float distance(struct point *point1, struct point *point2){
@@ -323,14 +248,18 @@ void make_new_path(struct point_group *pg_new, struct point_group *pg1, struct p
 
 void merge(struct point_group *pg1, struct point_group *pg2, struct point_group *pg_new){
   int i,j;
-  //printf("1\n");
-  //print_point_group(&pg1);
-  //printf("2\n");
-  //print_point_group(&pg2);
-    
+  //struct point_group pg1, pg2;
+  //pg1 = q->data_group[0];
+  //pg2 = q->data_group[1];
+ 
+  /* printf("1\n"); */
+  /* print_point_group(pg1); */
+  /* printf("2\n"); */
+  /* print_point_group(pg2); */
+
   // search for common point
   int b1_pos[3];
-  int b2_pos[3]; 
+  int b2_pos[3];
   float point[2];
   search(pg1, pg2, b1_pos, point);
   search(pg2, pg1, b2_pos, point);
@@ -359,7 +288,7 @@ void merge(struct point_group *pg1, struct point_group *pg2, struct point_group 
   }
   
   //printf ("d_max %f \n", d_max);
- 
+
   /* TODO make new path*/
   if (d_max == d[0]){
     make_new_path(pg_new, pg1, pg2, b1_pos[1], b2_pos[1], -1);
@@ -373,14 +302,15 @@ void merge(struct point_group *pg1, struct point_group *pg2, struct point_group 
   else if (d_max == d[3]){
     make_new_path(pg_new, pg1, pg2, b1_pos[2], b2_pos[1], 1);
   }
-  /* printf("CREATED pg_new: \n"); */
-  /* print_point_group(pg_new); */
-  /* printf("\n"); */
 }
 
-int return_index(struct queue *Q, struct array *AR, char *file_name){
-  int i, j, k;
+int return_index(struct point_group *pg_new, char *file_name1, char *file_name){
+  int i, j;
   float x, y;
+
+  struct point_group dict;
+  read_file(file_name1, &dict);
+
   FILE *fp;
   fp = fopen(file_name, "w");
   if (fp == NULL) {          // オープンに失敗した場合
@@ -388,104 +318,65 @@ int return_index(struct queue *Q, struct array *AR, char *file_name){
     return -1;                         // 異常終了
   }
   fprintf(fp, "index\n");
-  for (i=Q->head; i<Q->tail; i++){
-    for (j=0; j<(Q->data_group[i]).point_group_num; j++){
-      x = (Q->data_group[i]).data[j].x;
-      y = (Q->data_group[i]).data[j].y;
-      for(k=0; k<AR->num; k++){
-	//printf("X: %f, Y: %f\n\n", AR->data[k][0], AR->data[k][1]);
-	//printf("x: %f, y: %f\n", x, y);
-	if ((int)AR->data[k][0] == (int)x && (int)AR->data[k][1] == (int)y){
-	  fprintf(fp, "%d\n", k);
-	  printf("%d \n", k);
+  for (i=0; i<pg_new->point_group_num; i++){
+    x = pg_new->data[i].x;
+    y = pg_new->data[i].y;
+    for(j=0; j<dict.point_group_num; j++){
+      //printf("X: %f, Y: %f\n\n", dict.data[j].x, dict.data[j].y);
+      //printf("x: %f, y: %f\n", x, y);
+      if ((int)dict.data[j].x == (int)x && (int)dict.data[j].y == (int)y){
+	  fprintf(fp, "%d\n", j);
+	  //printf("%d \n", j);
 	}
       }
     }
-  }
   fclose(fp);
 }
 
-void divide_merge(struct queue *Q, struct array *AR, char *file_name){
-  //void divide_merge(struct queue *Q){
-  // 0 ~ n
-  // n ~ buffNum -1
-  //float buff_list[100];
-  struct queue Q_new;
-  
-  //printf("%d\n", (Q->data_group[Q->head]).point_group_num);
-  // 5
-
-  while ((Q->data_group[Q->head]).point_group_num > 3){
-    divide(&(Q->data_group[Q->head]), Q, divide_direction(&(Q->data_group[Q->head])));
-    dequeue(Q);
-    //printf("%d\n", Q->head); // 1
-    //printf("%d\n", (Q->data_group[Q->head]).point_group_num);
+  void divide_merge(struct point_group *PG, struct point_group *pg_new, char *file_name1, char *file_name){
+  struct point_group PG1, PG2;
+  //printf("a: %d\n", PG->point_group_num);
+  if (PG->point_group_num < 3 || PG->point_group_num == 3){
+    //enqueue(q, PG);
+    return;
+  }
+  else{
+    divide(&PG1, &PG2, PG, divide_direction(PG));
+    //struct point_group PG3, PG4;
+    divide_merge(&PG1, pg_new, file_name1, file_name);
+    divide_merge(&PG2, pg_new, file_name1, file_name);
+    /* printf("!!!\n"); */
+    /* print_point_group(&PG1); */
+    /* print_point_group(&PG2); */
+    /* printf("!!!\n"); */
+    //printf("QQQQQ\n");
+    //print_queue(q);
+    //printf("QQQQQ\n");
+    //merge(q, pg_new);
+    merge(&PG1, &PG2, pg_new);
   }
   
-  /* add Q_new */
-  int i;
-  for(i=Q->head; i<Q->tail; i++){
-    enqueue(&Q_new, &Q->data_group[i]);
-  }
-  printf("Q_new\n");
-  print_queue(&Q_new);
-  
-  //struct queue final_path;
-  /* merge Q_new*/
-  while (Q_new.head + 1 < Q_new.tail){
-    i = Q_new.head;
-    
-    struct point_group pg1;
-    struct point_group pg2;
-    struct point_group pg_new;
-    pg1 = Q_new.data_group[i];
-    pg2 = Q_new.data_group[i+1];
+  //printf("CREATED PATH: \n");
+  //print_point_group(pg_new);
+  //printf("\n");
 
-    /* printf("pg1: \n"); */
-    /* print_point_group(&pg1); */
-    /* printf("\n"); */
-    /* printf("pg2: \n"); */
-    /* print_point_group(&pg2); */
-    /* printf("\n"); */
-
-    merge(&pg1, &pg2, &pg_new);
-
-    //printf("created pg_new: \n"); 
-    //print_point_group(&pg_new); 
-    //printf("\n");
-
-
-    enqueue(&Q_new, &pg_new);  
-    dequeue(&Q_new);
-    dequeue(&Q_new); 
-  }
-  printf("final path\n");
+  //printf("final path\n");
   //print_queue(&Q_new);
-  return_index(&Q_new, AR, file_name);
+  return_index(pg_new, file_name1, file_name);
 }
 
 
 int main(int argc, char *args[])
 {
-  float buff[16][2];
-  char input_file_name[] = "input_2.csv";
-  char output_file_name[] = "output_2.csv";
+  char input_file_name[] = "input_6.csv";
+  char output_file_name[] = "output_6.csv";
   
-  read_file(input_file_name, buff);
-  int buffNum = sizeof buff /sizeof buff[0];
-  struct queue Q;
-  struct array AR;
-  AR.num =buffNum;
-  int i, j;
-  for (i=0; i<AR.num; i++){
-    for(j=0; j<2; j++){
-      AR.data[i][j] = buff[i][j];
-    }
-  }
-  initialize_queue(&Q, &AR, 1);
-  printf ("initialize\n");
-  print_queue(&Q);
+  struct point_group PG, pg_new;
+  read_file(input_file_name, &PG);
 
-  divide_merge(&Q, &AR, output_file_name);
+  //printf ("initialize\n");
+  //print_point_group(&PG);
+
+  divide_merge(&PG, &pg_new, input_file_name, output_file_name);
   return 0;
   }
